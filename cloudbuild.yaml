@@ -4,11 +4,11 @@ substitutions:
   _AR_REPO: 'cloud-run-source-deploy'
   PROJECT_ID: 'gen-lang-client-0473731579'
   COMMIT_SHA: '$(git rev-parse --short HEAD)'  
+
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${COMMIT_SHA}', '.']
-    dir: "./app/"
-    RepoDir: "./app/"
+
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${COMMIT_SHA}']
 
@@ -32,3 +32,4 @@ options:
   logging: CLOUD_LOGGING_ONLY
   substitutionOption: 'ALLOW_LOOSE'
 timeout: '300s'  
+
