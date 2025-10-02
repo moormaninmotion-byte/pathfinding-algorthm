@@ -1,0 +1,5 @@
+{
+  "name": "Pathfinding Algorithm Visualizer",
+  "description": "A web application that visually demonstrates pathfinding algorithms like Dijkstra's on a grid. Users can create walls, set start and end points, and watch the algorithm find the shortest path in real-time.",
+  "requestFramePermissions": []
+}

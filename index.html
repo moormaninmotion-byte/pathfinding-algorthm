@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pathfinding Algorithm Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0"
+  }
+}
+</script>
+    <style>
+      @keyframes pulse-visited {
+        0% {
+          transform: scale(0.8);
+          background-color: #93c5fd; /* Tailwind blue-300 */
+          border-radius: 50%;
+        }
+        60% {
+          transform: scale(1.1);
+          background-color: #3b82f6; /* Tailwind blue-500 */
+        }
+        100% {
+          transform: scale(1);
+          background-color: #60a5fa; /* Tailwind blue-400 */
+          border-radius: 0;
+        }
+      }
+
+      @keyframes glow-path {
+        0% {
+          box-shadow: 0 0 3px #fde047; /* Tailwind yellow-300 */
+        }
+        50% {
+          box-shadow: 0 0 10px 2px #facc15; /* Tailwind yellow-400 */
+        }
+        100% {
+          box-shadow: 0 0 3px #fde047; /* Tailwind yellow-300 */
+        }
+      }
+
+      /*
+        The animation for visited nodes is designed to run once when the node
+        is first marked as 'visited'. This provides a clear, satisfying visual
+        pop as the algorithm explores the grid.
+      */
+      .node-visited {
+        animation-name: pulse-visited;
+        animation-duration: 0.5s;
+        animation-timing-function: ease-out;
+        animation-fill-mode: forwards; /* Ensures the node stays at the final state of the animation */
+      }
+
+      /*
+        The path node animation is a continuous, subtle glow, making the
+        final shortest path stand out clearly from the rest of the grid
+        without being distracting.
+      */
+      .node-path {
+        animation-name: glow-path;
+        animation-duration: 1.5s;
+        animation-timing-function: ease-in-out;
+        animation-iteration-count: infinite;
+      }
+    </style>
+</head>
+  <body class="bg-gray-900 text-white">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
