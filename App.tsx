@@ -84,15 +84,28 @@ const App: React.FC = () => {
   const [selectedAlgorithm, setSelectedAlgorithm] = useState<Algorithm>('dijkstra');
   const [animationSpeed, setAnimationSpeed] = useState(10); // Lower is faster
   
-  const isBusy = isVisualizing || isGeneratingMaze;
+  // State for step-by-step visualization
+  const [algorithmResult, setAlgorithmResult] = useState<{ visitedNodesInOrder: Node[], nodesInShortestPathOrder: Node[] } | null>(null);
+  const [currentStep, setCurrentStep] = useState(0);
 
+  const isBusy = isVisualizing || isGeneratingMaze;
+  const isSteppingActive = algorithmResult !== null;
+  const isSteppingComplete = isSteppingActive && currentStep >= algorithmResult.visitedNodesInOrder.length + algorithmResult.nodesInShortestPathOrder.length;
+
+  const resetSteppingState = () => {
+    setAlgorithmResult(null);
+    setCurrentStep(0);
+  };
+  
   useEffect(() => {
+    resetSteppingState();
     const newGrid = createInitialGrid(rows, cols, startNodeRow, startNodeCol, endNodeRow, endNodeCol);
     setGrid(newGrid);
   }, [rows, cols, startNodeRow, startNodeCol, endNodeRow, endNodeCol]);
 
   const handleMouseDown = (row: number, col: number) => {
     if (isBusy) return;
+    resetSteppingState();
     const newGrid = getNewGridWithWallToggled(grid, row, col);
     setGrid(newGrid);
     setIsMousePressed(true);
@@ -100,6 +113,7 @@ const App: React.FC = () => {
 
   const handleMouseEnter = (row: number, col: number) => {
     if (!isMousePressed || isBusy) return;
+    resetSteppingState();
     const newGrid = getNewGridWithWallToggled(grid, row, col);
     setGrid(newGrid);
   };
@@ -110,12 +124,14 @@ const App: React.FC = () => {
 
   const clearGrid = useCallback(() => {
     if (isBusy) return;
+    resetSteppingState();
     const newGrid = createInitialGrid(rows, cols, startNodeRow, startNodeCol, endNodeRow, endNodeCol);
     setGrid(newGrid);
   }, [isBusy, rows, cols, startNodeRow, startNodeCol, endNodeRow, endNodeCol]);
 
   const clearPath = useCallback(() => {
     if (isBusy) return;
+    resetSteppingState();
     const newGrid = grid.map(row => 
       row.map(node => ({
         ...node,
@@ -130,9 +146,14 @@ const App: React.FC = () => {
     setGrid(newGrid);
   }, [grid, isBusy]);
 
+  const handleAlgorithmChange = (algo: Algorithm) => {
+    resetSteppingState();
+    setSelectedAlgorithm(algo);
+  };
+
   const handleGridResize = (newRows: number, newCols: number) => {
     if (isBusy) return;
-    // Basic validation
+    resetSteppingState();
     newRows = Math.max(10, Math.min(50, newRows));
     newCols = Math.max(10, Math.min(100, newCols));
 
@@ -190,33 +211,87 @@ const App: React.FC = () => {
 
   const visualizeAlgorithm = () => {
     if (isBusy || !grid.length) return;
+    resetSteppingState();
     setIsVisualizing(true);
     clearPath();
     
     setTimeout(() => {
-        // Create a fresh grid copy for the algorithm to mutate
         const freshGrid = grid.map(row => row.map(node => ({...node})));
         const startNode = freshGrid[startNodeRow][startNodeCol];
         const endNode = freshGrid[endNodeRow][endNodeCol];
         let result;
 
         switch (selectedAlgorithm) {
-          case 'dijkstra':
-            result = dijkstra(freshGrid, startNode, endNode);
-            break;
-          case 'bfs':
-            result = bfs(freshGrid, startNode, endNode);
-            break;
-          case 'astar':
-            result = astar(freshGrid, startNode, endNode);
-            break;
-          default:
-            setIsVisualizing(false);
-            return;
+          case 'dijkstra': result = dijkstra(freshGrid, startNode, endNode); break;
+          case 'bfs': result = bfs(freshGrid, startNode, endNode); break;
+          case 'astar': result = astar(freshGrid, startNode, endNode); break;
+          default: setIsVisualizing(false); return;
         }
         const { visitedNodesInOrder, nodesInShortestPathOrder } = result;
         animateSearch(visitedNodesInOrder, nodesInShortestPathOrder);
     }, 50);
+  };
+
+  const handleStep = () => {
+    if (isBusy || isSteppingComplete) return;
+
+    if (!isSteppingActive) {
+      clearPath();
+      setTimeout(() => {
+        const freshGrid = grid.map(row => row.map(node => ({ ...node })));
+        const startNode = freshGrid[startNodeRow][startNodeCol];
+        const endNode = freshGrid[endNodeRow][endNodeCol];
+        let result;
+
+        switch (selectedAlgorithm) {
+          case 'dijkstra': result = dijkstra(freshGrid, startNode, endNode); break;
+          case 'bfs': result = bfs(freshGrid, startNode, endNode); break;
+          case 'astar': result = astar(freshGrid, startNode, endNode); break;
+          default: return;
+        }
+
+        if (result.visitedNodesInOrder.length > 0) {
+            setAlgorithmResult(result);
+            setCurrentStep(1);
+            const firstNode = result.visitedNodesInOrder[0];
+            setGrid(prevGrid => {
+                const newGrid = prevGrid.map(r => r.slice());
+                if (!newGrid[firstNode.row][firstNode.col].isStart) {
+                     newGrid[firstNode.row][firstNode.col].isVisited = true;
+                }
+                return newGrid;
+            });
+        }
+      }, 50);
+      return;
+    }
+
+    const { visitedNodesInOrder, nodesInShortestPathOrder } = algorithmResult;
+
+    if (currentStep < visitedNodesInOrder.length) {
+      const node = visitedNodesInOrder[currentStep];
+      setGrid(prevGrid => {
+        const newGrid = prevGrid.map(r => r.slice());
+        if (!newGrid[node.row][node.col].isStart && !newGrid[node.row][node.col].isEnd) {
+            newGrid[node.row][node.col].isVisited = true;
+        }
+        return newGrid;
+      });
+      setCurrentStep(currentStep + 1);
+    } else {
+      const pathStepIndex = currentStep - visitedNodesInOrder.length;
+      if (pathStepIndex < nodesInShortestPathOrder.length) {
+        const node = nodesInShortestPathOrder[pathStepIndex];
+        setGrid(prevGrid => {
+          const newGrid = prevGrid.map(r => r.slice());
+          if (!newGrid[node.row][node.col].isStart && !newGrid[node.row][node.col].isEnd) {
+              newGrid[node.row][node.col].isPath = true;
+          }
+          return newGrid;
+        });
+        setCurrentStep(currentStep + 1);
+      }
+    }
   };
 
   const animateMazeGeneration = (wallsToAnimate: Node[]) => {
@@ -230,24 +305,18 @@ const App: React.FC = () => {
         });
       }, animationSpeed * i);
     }
-    setTimeout(() => {
-      setIsGeneratingMaze(false);
-    }, animationSpeed * wallsToAnimate.length);
+    setTimeout(() => setIsGeneratingMaze(false), animationSpeed * wallsToAnimate.length);
   };
 
   const handleGenerateMaze = () => {
     if (isBusy) return;
+    resetSteppingState();
     setIsGeneratingMaze(true);
     clearGrid();
 
     setTimeout(() => {
       const newGrid = grid.map(row =>
-        row.map(node => {
-          if (node.isStart || node.isEnd) {
-            return { ...node, isWall: false };
-          }
-          return { ...node, isWall: true };
-        })
+        row.map(node => ({ ...node, isWall: !(node.isStart || node.isEnd) }))
       );
       setGrid(newGrid);
 
@@ -267,12 +336,15 @@ const App: React.FC = () => {
         onClearGrid={clearGrid}
         onClearPath={clearPath}
         selectedAlgorithm={selectedAlgorithm}
-        onAlgorithmChange={setSelectedAlgorithm}
+        onAlgorithmChange={handleAlgorithmChange}
         animationSpeed={animationSpeed}
         onAnimationSpeedChange={setAnimationSpeed}
         rows={rows}
         cols={cols}
         onGridResize={handleGridResize}
+        isSteppingActive={isSteppingActive}
+        isSteppingComplete={isSteppingComplete}
+        onStep={handleStep}
       />
       <Grid
         grid={grid}

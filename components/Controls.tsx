@@ -8,8 +8,11 @@ interface ControlsProps {
   animationSpeed: number;
   rows: number;
   cols: number;
+  isSteppingActive: boolean;
+  isSteppingComplete: boolean;
   onAlgorithmChange: (algorithm: Algorithm) => void;
   onVisualize: () => void;
+  onStep: () => void;
   onGenerateMaze: () => void;
   onClearGrid: () => void;
   onClearPath: () => void;
@@ -31,8 +34,11 @@ const Controls: React.FC<ControlsProps> = ({
   animationSpeed,
   rows,
   cols,
+  isSteppingActive,
+  isSteppingComplete,
   onAlgorithmChange,
   onVisualize, 
+  onStep,
   onGenerateMaze,
   onClearGrid, 
   onClearPath,
@@ -65,6 +71,7 @@ const Controls: React.FC<ControlsProps> = ({
   };
 
   const isBusy = isVisualizing || isGeneratingMaze;
+  const disablePrimaryActions = isBusy || isSteppingActive;
   
   return (
     <div className="bg-gray-800 p-4 rounded-lg shadow-lg mb-4 w-full max-w-7xl">
@@ -78,7 +85,7 @@ const Controls: React.FC<ControlsProps> = ({
                 id="algorithm-select"
                 value={selectedAlgorithm}
                 onChange={(e) => onAlgorithmChange(e.target.value as Algorithm)}
-                disabled={isBusy}
+                disabled={disablePrimaryActions}
                 className="appearance-none bg-gray-700 border border-gray-600 text-white font-semibold py-2 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-gray-600 focus:border-gray-500 disabled:opacity-50"
                 aria-label="Select Algorithm"
               >
@@ -92,14 +99,21 @@ const Controls: React.FC<ControlsProps> = ({
             </div>
             <button
               onClick={onVisualize}
-              disabled={isBusy}
+              disabled={disablePrimaryActions}
               className="px-4 py-2 bg-cyan-500 text-white font-semibold rounded-lg shadow-md hover:bg-cyan-600 disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors"
             >
               {isVisualizing ? 'Visualizing...' : getVisualizeButtonText()}
             </button>
             <button
+              onClick={onStep}
+              disabled={isBusy || isSteppingComplete}
+              className="px-4 py-2 bg-teal-500 text-white font-semibold rounded-lg shadow-md hover:bg-teal-600 disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors"
+            >
+              Step
+            </button>
+            <button
               onClick={onGenerateMaze}
-              disabled={isBusy}
+              disabled={disablePrimaryActions}
               className="px-4 py-2 bg-indigo-500 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-600 disabled:bg-gray-500 transition-colors"
             >
               {isGeneratingMaze ? 'Generating...' : 'Generate Maze'}
@@ -132,7 +146,7 @@ const Controls: React.FC<ControlsProps> = ({
               max="100"
               value={105 - animationSpeed}
               onChange={(e) => onAnimationSpeedChange(105 - parseInt(e.target.value, 10))}
-              disabled={isBusy}
+              disabled={disablePrimaryActions}
               className="w-32"
             />
           </div>
@@ -143,7 +157,7 @@ const Controls: React.FC<ControlsProps> = ({
               type="number"
               value={inputRows}
               onChange={(e) => setInputRows(parseInt(e.target.value, 10))}
-              disabled={isBusy}
+              disabled={disablePrimaryActions}
               className="w-20 bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-center"
             />
             <label htmlFor="cols-input" className="text-sm font-medium">Cols</label>
@@ -152,12 +166,12 @@ const Controls: React.FC<ControlsProps> = ({
               type="number"
               value={inputCols}
               onChange={(e) => setInputCols(parseInt(e.target.value, 10))}
-              disabled={isBusy}
+              disabled={disablePrimaryActions}
               className="w-20 bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-center"
             />
             <button
               onClick={handleResize}
-              disabled={isBusy}
+              disabled={disablePrimaryActions}
               className="px-4 py-1 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-500 disabled:bg-gray-500 transition-colors"
             >
               Resize Grid
